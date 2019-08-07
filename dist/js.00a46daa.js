@@ -21530,56 +21530,28 @@ function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.
 
 function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
 
+_coordinates.points200.sort(function (cityA, cityB) {
+  var cityACombined = cityA.x + cityA.y;
+  var cityBCombined = cityB.x + cityB.y;
+  return cityACombined - cityBCombined;
+});
+
 function getSortedCities() {
-  var xIndex = 0;
-  var yIndex = 0;
-  var citiesCache = {};
-
-  var citiesArray = _toConsumableArray(_coordinates.points40).map(function (city, i) {
-    // save city to cache with flag to check if it has been sorted yet
-    city.sorted = false;
-    citiesCache[i] = city;
-    city.id = i;
-    return city;
-  });
-
-  var sortedByX = _toConsumableArray(citiesArray).sort(function (cityA, cityB) {
-    return cityA.x - cityB.x;
-  });
-
-  var sortedByY = _toConsumableArray(citiesArray).sort(function (cityA, cityB) {
+  var sortedByY = _toConsumableArray(_coordinates.points200).sort(function (cityA, cityB) {
     return cityA.y - cityB.y;
-  }); // start from city with the lowest X value and mark it as sorted in the citiesCache
+  });
 
-
-  var finalSort = [sortedByX[xIndex++]];
-  citiesCache[sortedByX[xIndex].id].sorted = true;
-  console.log(sortedByX, sortedByY);
-
-  while (finalSort.length !== citiesArray.length) {
-    var nextXDistance = sortedByX[xIndex] ? sortedByX[xIndex].x - sortedByX[xIndex - 1].x : Number.POSITIVE_INFINITY;
-    var nextYDistance = sortedByY[yIndex + 1] ? sortedByY[yIndex + 1].y - sortedByY[yIndex].y : Number.POSITIVE_INFINITY;
-    console.log(nextXDistance, nextYDistance);
-
-    if (nextXDistance <= nextYDistance) {
-      if (!citiesCache[sortedByX[xIndex].id].sorted) {
-        finalSort.push(sortedByX[xIndex]);
-        citiesCache[sortedByX[xIndex].id].sorted = true;
+  var chunkedArray = (0, _lodash.chunk)(sortedByY, 20).map(function (chunk, i) {
+    chunk.sort(function (cityA, cityB) {
+      if (i % 2 !== 0) {
+        return cityA.x - cityB.x;
       }
 
-      xIndex++;
-    } else {
-      if (!citiesCache[sortedByY[yIndex].id].sorted) {
-        finalSort.push(sortedByY[yIndex]);
-        citiesCache[sortedByY[yIndex].id].sorted = true;
-      }
-
-      yIndex++;
-    }
-  }
-
-  console.log(citiesCache);
-  return finalSort;
+      return cityB.x - cityA.x;
+    });
+    return chunk;
+  });
+  return chunkedArray.flat();
 }
 
 var canvas = document.querySelector("canvas");
@@ -21587,7 +21559,7 @@ var c = canvas.getContext("2d");
 var maxCoordWidth, maxCoordHeight, xScale, yScale, cities, timeout, radius;
 
 function initializeMap() {
-  var _coordinates$reduce = _coordinates.points40.reduce(function (maxVals, city) {
+  var _coordinates$reduce = _coordinates.points200.reduce(function (maxVals, city) {
     if (city.x > maxVals[0]) {
       maxVals[0] = city.x;
     }
@@ -21603,11 +21575,10 @@ function initializeMap() {
 
   maxCoordWidth = _coordinates$reduce2[0];
   maxCoordHeight = _coordinates$reduce2[1];
-  cities = getSortedCities();
   setCanvasDimensions();
-  cities = cities.map(function (city, i) {
+  cities = getSortedCities().map(function (city, i, array) {
     var circle = new Circle(city.x, city.y);
-    var next = cities[i + 1] ? cities[i + 1] : cities[0];
+    var next = array[i + 1] ? array[i + 1] : array[0];
     requestAnimationFrame(function () {
       circle.draw(next);
     });
@@ -21688,7 +21659,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53452" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60074" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
