@@ -1,0 +1,12 @@
+{
+  "name": "band-route-problem",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/JaredSartin/band-route-problem.git",
+  "author": "Matthew Masurka <m.masurka@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-plugin-prettier": "^3.1.0"
+  }
+}
