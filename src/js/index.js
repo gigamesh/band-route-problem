@@ -1,28 +1,61 @@
-import { points200 as coordinates } from "./coordinates";
+import { chunk } from "lodash";
+import { points40 as coordinates } from "./coordinates";
 
-coordinates.sort((cityA, cityB) => {
-  const cityACombined = cityA.x + cityA.y;
-  const cityBCombined = cityB.x + cityB.y;
-  return cityACombined - cityBCombined;
-});
+function getSortedCities() {
+  let xIndex = 0;
+  let yIndex = 0;
+  const citiesCache = {};
+  const citiesArray = [...coordinates].map((city, i) => {
+    // save city to cache with flag to check if it has been sorted yet
+    city.sorted = false;
+    citiesCache[i] = city;
+    city.id = i;
+    return city;
+  });
+
+  const sortedByX = [...citiesArray].sort((cityA, cityB) => cityA.x - cityB.x);
+  const sortedByY = [...citiesArray].sort((cityA, cityB) => cityA.y - cityB.y);
+
+  // start from city with the lowest X value and mark it as sorted in the citiesCache
+  const finalSort = [sortedByX[xIndex++]];
+  citiesCache[sortedByX[xIndex].id].sorted = true;
+
+  console.log(sortedByX, sortedByY);
+
+  while (finalSort.length !== citiesArray.length) {
+    const nextXDistance = sortedByX[xIndex]
+      ? sortedByX[xIndex].x - sortedByX[xIndex - 1].x
+      : Number.POSITIVE_INFINITY;
+    const nextYDistance = sortedByY[yIndex + 1]
+      ? sortedByY[yIndex + 1].y - sortedByY[yIndex].y
+      : Number.POSITIVE_INFINITY;
+
+    console.log(nextXDistance, nextYDistance);
+
+    if (nextXDistance <= nextYDistance) {
+      if (!citiesCache[sortedByX[xIndex].id].sorted) {
+        finalSort.push(sortedByX[xIndex]);
+        citiesCache[sortedByX[xIndex].id].sorted = true;
+      }
+      xIndex++;
+    } else {
+      if (!citiesCache[sortedByY[yIndex].id].sorted) {
+        finalSort.push(sortedByY[yIndex]);
+        citiesCache[sortedByY[yIndex].id].sorted = true;
+      }
+      yIndex++;
+    }
+  }
+
+  console.log(citiesCache);
+
+  return finalSort;
+}
 
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
 
 let maxCoordWidth, maxCoordHeight, xScale, yScale, cities, timeout, radius;
-
-window.addEventListener("resize", () => {
-  clearTimeout(timeout);
-
-  timeout = setTimeout(() => {
-    setCanvasDimensions();
-
-    cities.forEach((city, i) => {
-      const next = cities[i + 1] ? cities[i + 1] : cities[0];
-      city.draw(next);
-    });
-  }, 100);
-});
 
 function initializeMap() {
   [maxCoordWidth, maxCoordHeight] = coordinates.reduce(
@@ -38,12 +71,17 @@ function initializeMap() {
     [0, 0]
   );
 
+  cities = getSortedCities();
   setCanvasDimensions();
 
-  cities = coordinates.map((city, i) => {
+  cities = cities.map((city, i) => {
     const circle = new Circle(city.x, city.y);
-    const next = coordinates[i + 1] ? coordinates[i + 1] : coordinates[0];
-    circle.draw(next);
+    const next = cities[i + 1] ? cities[i + 1] : cities[0];
+
+    requestAnimationFrame(() => {
+      circle.draw(next);
+    });
+
     return circle;
   });
 }
@@ -84,4 +122,19 @@ function Circle(x, y) {
   };
 }
 
-initializeMap();
+window.addEventListener("resize", () => {
+  clearTimeout(timeout);
+
+  timeout = setTimeout(() => {
+    setCanvasDimensions();
+
+    cities.forEach((city, i) => {
+      const next = cities[i + 1] ? cities[i + 1] : cities[0];
+      city.draw(next);
+    });
+  }, 100);
+});
+
+window.addEventListener("load", function() {
+  initializeMap();
+});
