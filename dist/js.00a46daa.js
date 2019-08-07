@@ -2363,28 +2363,28 @@ function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = 
 
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
-// points500.sort((cityA, cityB) => {
-//   const cityACombined = cityA.x + cityA.y;
-//   const cityBCombined = cityB.x + cityB.y;
-//   return cityACombined - cityBCombined;
-// });
+_coordinates.points200.sort(function (cityA, cityB) {
+  var cityACombined = cityA.x + cityA.y;
+  var cityBCombined = cityB.x + cityB.y;
+  return cityACombined - cityBCombined;
+});
+
 var canvas = document.querySelector("canvas");
 var c = canvas.getContext("2d");
-var MAX_WIDTH = 800;
-var maxCoordWidth, maxCoordHeight, xScale, yScale, cities;
+var maxCoordWidth, maxCoordHeight, xScale, yScale, cities, timeout, radius;
 window.addEventListener("resize", function () {
-  setTimeout(function () {
+  clearTimeout(timeout);
+  timeout = setTimeout(function () {
     setCanvasDimensions();
-    cities.forEach(function (city) {
-      return city.draw();
+    cities.forEach(function (city, i) {
+      var next = cities[i + 1] ? cities[i + 1] : cities[0];
+      city.draw(next);
     });
-  }, 0);
+  }, 100);
 });
 
 function initializeMap() {
-  setCanvasDimensions();
-
-  var _coordinates$reduce = _coordinates.points500.reduce(function (maxVals, city) {
+  var _coordinates$reduce = _coordinates.points200.reduce(function (maxVals, city) {
     if (city.x > maxVals[0]) {
       maxVals[0] = city.x;
     }
@@ -2400,32 +2400,44 @@ function initializeMap() {
 
   maxCoordWidth = _coordinates$reduce2[0];
   maxCoordHeight = _coordinates$reduce2[1];
-  xScale = canvas.width / maxCoordWidth;
-  yScale = canvas.height / maxCoordHeight;
-  cities = _coordinates.points500.map(function (city) {
+  setCanvasDimensions();
+  cities = _coordinates.points200.map(function (city, i) {
     var circle = new Circle(city.x, city.y);
-    circle.draw();
+    var next = _coordinates.points200[i + 1] ? _coordinates.points200[i + 1] : _coordinates.points200[0];
+    circle.draw(next);
     return circle;
   });
 }
 
 function setCanvasDimensions() {
-  canvas.width = window.innerWidth;
+  canvas.width = c.canvas.clientWidth;
   canvas.height = canvas.width * 0.6;
+  xScale = canvas.width / maxCoordWidth;
+  yScale = canvas.height / maxCoordHeight;
+  radius = canvas.width * 0.003;
 }
 
 function Circle(x, y) {
-  this.radius = 3;
   this.x = x;
   this.y = y;
   this.color = "#0000ff";
 
-  this.draw = function () {
+  this.draw = function (next) {
+    var currentX = this.x * xScale;
+    var currentY = this.y * yScale;
+    var nextX = next.x * xScale;
+    var nextY = next.y * yScale; // current city
+
     c.beginPath();
-    c.arc(this.x * xScale, this.y * yScale, this.radius, 0, Math.PI * 2, false);
+    c.arc(currentX, currentY, radius, 0, Math.PI * 2, false);
     c.fillStyle = this.color;
     c.fill();
-    c.lineWidth = 1;
+    c.lineWidth = 1; // line to next city
+
+    c.beginPath();
+    c.moveTo(currentX, currentY);
+    c.lineTo(nextX, nextY);
+    c.stroke();
   };
 }
 
