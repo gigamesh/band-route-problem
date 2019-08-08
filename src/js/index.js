@@ -1,33 +1,14 @@
 import { chunk } from "lodash";
-import { points200 as coordinates } from "./coordinates";
+import calcWaypoints from "./calcWaypoints";
+import { points500 as coordinates } from "./coordinates";
 
-coordinates.sort((cityA, cityB) => {
-  const cityACombined = cityA.x + cityA.y;
-  const cityBCombined = cityB.x + cityB.y;
-  return cityACombined - cityBCombined;
-});
-
-function getSortedCities() {
-  const sortedByY = [...coordinates].sort((cityA, cityB) => cityA.y - cityB.y);
-  const chunkedArray = chunk(sortedByY, 20).map((chunk, i) => {
-    chunk.sort((cityA, cityB) => {
-      if (i % 2 !== 0) {
-        return cityA.x - cityB.x;
-      }
-      return cityB.x - cityA.x;
-    });
-    return chunk;
-  });
-
-  return chunkedArray.flat();
-}
-
-const canvas = document.querySelector("canvas");
-const c = canvas.getContext("2d");
-
+let canvas = document.querySelector("canvas");
+let c = canvas.getContext("2d");
+let tick = 1;
 let maxCoordWidth, maxCoordHeight, xScale, yScale, cities, timeout, radius;
 
 function initializeMap() {
+  tick = 1;
   [maxCoordWidth, maxCoordHeight] = coordinates.reduce(
     (maxVals, city) => {
       if (city.x > maxVals[0]) {
@@ -47,12 +28,43 @@ function initializeMap() {
     const circle = new Circle(city.x, city.y);
     const next = array[i + 1] ? array[i + 1] : array[0];
 
-    requestAnimationFrame(() => {
-      circle.draw(next);
-    });
+    circle.draw(next);
 
     return circle;
   });
+
+  // calculate incremental points along the path
+  const points = calcWaypoints([...cities, cities[0]], xScale, yScale);
+  animate();
+
+  // incrementally draw additional line segments along the path
+  function animate() {
+    if (tick < points.length - 1) {
+      requestAnimationFrame(animate);
+    }
+    c.beginPath();
+    c.moveTo(points[tick - 1].x * xScale, points[tick - 1].y * yScale);
+    c.lineTo(points[tick].x * xScale, points[tick].y * yScale);
+    c.stroke();
+
+    tick++;
+  }
+}
+
+function getSortedCities() {
+  const chunkSize = coordinates.length / 10;
+  const sortedByY = [...coordinates].sort((cityA, cityB) => cityA.y - cityB.y);
+  const chunkedArray = chunk(sortedByY, chunkSize).map((chunk, i) => {
+    chunk.sort((cityA, cityB) => {
+      if (i % 2 !== 0) {
+        return cityA.x - cityB.x;
+      }
+      return cityB.x - cityA.x;
+    });
+    return chunk;
+  });
+
+  return chunkedArray.flat();
 }
 
 function setCanvasDimensions() {
@@ -73,8 +85,6 @@ function Circle(x, y) {
   this.draw = function(next) {
     const currentX = this.x * xScale;
     const currentY = this.y * yScale;
-    const nextX = next.x * xScale;
-    const nextY = next.y * yScale;
 
     // current city
     c.beginPath();
@@ -82,12 +92,6 @@ function Circle(x, y) {
     c.fillStyle = this.color;
     c.fill();
     c.lineWidth = 1;
-
-    // line to next city
-    c.beginPath();
-    c.moveTo(currentX, currentY);
-    c.lineTo(nextX, nextY);
-    c.stroke();
   };
 }
 
@@ -95,12 +99,7 @@ window.addEventListener("resize", () => {
   clearTimeout(timeout);
 
   timeout = setTimeout(() => {
-    setCanvasDimensions();
-
-    cities.forEach((city, i) => {
-      const next = cities[i + 1] ? cities[i + 1] : cities[0];
-      city.draw(next);
-    });
+    initializeMap();
   }, 100);
 });
 
