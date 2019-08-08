@@ -21574,7 +21574,7 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 var canvas = document.querySelector("canvas");
 var c = canvas.getContext("2d");
 var tick = 1;
-var maxCoordWidth, maxCoordHeight, xScale, yScale, cities, timeout, radius;
+var maxCoordWidth, maxCoordHeight, xScale, yScale, timeout, radius;
 
 function initializeMap() {
   tick = 1;
@@ -21596,7 +21596,7 @@ function initializeMap() {
   maxCoordWidth = _coordinates$reduce2[0];
   maxCoordHeight = _coordinates$reduce2[1];
   setCanvasDimensions();
-  cities = getSortedCities().map(function (city, i, array) {
+  var cities = getSortedCities().map(function (city, i, array) {
     var circle = new Circle(city.x, city.y);
     var next = array[i + 1] ? array[i + 1] : array[0];
     circle.draw(next);
@@ -21620,9 +21620,14 @@ function initializeMap() {
 }
 
 function getSortedCities() {
-  var chunkSize = _coordinates.points500.length / 10;
+  var cities = _coordinates.points500.map(function (city, i) {
+    city.id = i;
+    return city;
+  });
 
-  var sortedByY = _toConsumableArray(_coordinates.points500).sort(function (cityA, cityB) {
+  var chunkSize = cities.length / 10;
+
+  var sortedByY = _toConsumableArray(cities).sort(function (cityA, cityB) {
     return cityA.y - cityB.y;
   });
 
@@ -21636,7 +21641,13 @@ function getSortedCities() {
     });
     return chunk;
   });
-  return chunkedArray.flat();
+  cities = chunkedArray.flat();
+  var first = cities.findIndex(function (city) {
+    return city.id === 0;
+  });
+  var firstHalf = cities.slice(0, first);
+  var lastHalf = cities.slice(first);
+  return [].concat(_toConsumableArray(lastHalf), _toConsumableArray(firstHalf));
 }
 
 function setCanvasDimensions() {

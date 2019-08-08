@@ -5,7 +5,7 @@ import { points500 as coordinates } from "./coordinates";
 let canvas = document.querySelector("canvas");
 let c = canvas.getContext("2d");
 let tick = 1;
-let maxCoordWidth, maxCoordHeight, xScale, yScale, cities, timeout, radius;
+let maxCoordWidth, maxCoordHeight, xScale, yScale, timeout, radius;
 
 function initializeMap() {
   tick = 1;
@@ -24,7 +24,7 @@ function initializeMap() {
 
   setCanvasDimensions();
 
-  cities = getSortedCities().map((city, i, array) => {
+  const cities = getSortedCities().map((city, i, array) => {
     const circle = new Circle(city.x, city.y);
     const next = array[i + 1] ? array[i + 1] : array[0];
 
@@ -52,8 +52,12 @@ function initializeMap() {
 }
 
 function getSortedCities() {
-  const chunkSize = coordinates.length / 10;
-  const sortedByY = [...coordinates].sort((cityA, cityB) => cityA.y - cityB.y);
+  let cities = coordinates.map((city, i) => {
+    city.id = i;
+    return city;
+  });
+  const chunkSize = cities.length / 10;
+  const sortedByY = [...cities].sort((cityA, cityB) => cityA.y - cityB.y);
   const chunkedArray = chunk(sortedByY, chunkSize).map((chunk, i) => {
     chunk.sort((cityA, cityB) => {
       if (i % 2 !== 0) {
@@ -64,7 +68,11 @@ function getSortedCities() {
     return chunk;
   });
 
-  return chunkedArray.flat();
+  cities = chunkedArray.flat();
+  const first = cities.findIndex(city => city.id === 0);
+  const firstHalf = cities.slice(0, first);
+  const lastHalf = cities.slice(first);
+  return [...lastHalf, ...firstHalf];
 }
 
 function setCanvasDimensions() {

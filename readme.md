@@ -28,3 +28,14 @@ If you have questions on the challenge, please contact Jared Sartin: jared@leftf
 # Candidate Notes:
 
 ### Fill in comments, external tool usage, and time tracking
+
+#### First two hours: 
+I decided on using html canvas to display a grid of the coordinates. I over-confidently assumed finding the optimal route wouldn't be too challenging, but eventually realized that this is the Travelling Salesman problem, which is NP-hard (there is no known algorithm for calculating a solution within polynomial time).
+#### Second two hours: 
+I came up with a naive solution of just sorting the coordinates array based on adding together the x and y values of each pair. I also worked on getting the dots and travel path rendered on the canvas.
+#### Additional hours (approx 4)
+I wanted to try to keep looking for a better solution to reduce the distance. I realized that sorting the coordinates array by one dimension, then breaking up the array into smaller chunks and sorting them individually using the other dimension could lead to a shorter total distance. So I installed lodash and imported the `chunk` function. For each chunk, I alternated ascending and descending order so that the band can weave back & forth across the map and hit all the cities neary by on each pass. 
+
+I also wanted to animate the tour route but an approach didn't come to mind right away, so I did some googling and found a stackoverflow that had a good solution.
+
+Finally, I realized that I missed the part of the instructions that said to use the first coordinates in the array as the starting city, so I gave each coordinate object an id and shifted the sorted array so that the original first set of coordinates remains in the first index.
