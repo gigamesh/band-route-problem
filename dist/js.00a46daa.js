@@ -19274,7 +19274,44 @@ var define;
   }
 }.call(this));
 
-},{"buffer":"../../../Users/matthewmasurka/.config/yarn/global/node_modules/buffer/index.js"}],"js/coordinates.js":[function(require,module,exports) {
+},{"buffer":"../../../Users/matthewmasurka/.config/yarn/global/node_modules/buffer/index.js"}],"js/calcWaypoints.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+// I can't take credit for this function
+// source: https://stackoverflow.com/questions/23939588/how-to-animate-drawing-lines-on-canvas
+var INCREMENT = 2;
+
+function calcWaypoints(vertices) {
+  var waypoints = [];
+  var lastPoint = vertices[vertices.length - 1];
+
+  for (var i = 1; i < vertices.length; i++) {
+    var pt0 = vertices[i - 1];
+    var pt1 = vertices[i];
+    var dx = pt1.x - pt0.x;
+    var dy = pt1.y - pt0.y;
+
+    for (var j = 0; j < INCREMENT; j++) {
+      var x = pt0.x + dx * j / INCREMENT;
+      var y = pt0.y + dy * j / INCREMENT;
+      waypoints.push({
+        x: x,
+        y: y
+      });
+    }
+  }
+
+  waypoints.push(lastPoint);
+  return waypoints;
+}
+
+var _default = calcWaypoints;
+exports.default = _default;
+},{}],"js/coordinates.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -21512,15 +21549,11 @@ exports.points500 = points500;
 
 var _lodash = require("lodash");
 
+var _calcWaypoints = _interopRequireDefault(require("./calcWaypoints"));
+
 var _coordinates = require("./coordinates");
 
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
-
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
-
-function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
 
@@ -21530,64 +21563,23 @@ function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.
 
 function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
 
-function getSortedCities() {
-  var xIndex = 0;
-  var yIndex = 0;
-  var citiesCache = {};
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
 
-  var citiesArray = _toConsumableArray(_coordinates.points40).map(function (city, i) {
-    // save city to cache with flag to check if it has been sorted yet
-    city.sorted = false;
-    citiesCache[i] = city;
-    city.id = i;
-    return city;
-  });
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
 
-  var sortedByX = _toConsumableArray(citiesArray).sort(function (cityA, cityB) {
-    return cityA.x - cityB.x;
-  });
+function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
 
-  var sortedByY = _toConsumableArray(citiesArray).sort(function (cityA, cityB) {
-    return cityA.y - cityB.y;
-  }); // start from city with the lowest X value and mark it as sorted in the citiesCache
-
-
-  var finalSort = [sortedByX[xIndex++]];
-  citiesCache[sortedByX[xIndex].id].sorted = true;
-  console.log(sortedByX, sortedByY);
-
-  while (finalSort.length !== citiesArray.length) {
-    var nextXDistance = sortedByX[xIndex] ? sortedByX[xIndex].x - sortedByX[xIndex - 1].x : Number.POSITIVE_INFINITY;
-    var nextYDistance = sortedByY[yIndex + 1] ? sortedByY[yIndex + 1].y - sortedByY[yIndex].y : Number.POSITIVE_INFINITY;
-    console.log(nextXDistance, nextYDistance);
-
-    if (nextXDistance <= nextYDistance) {
-      if (!citiesCache[sortedByX[xIndex].id].sorted) {
-        finalSort.push(sortedByX[xIndex]);
-        citiesCache[sortedByX[xIndex].id].sorted = true;
-      }
-
-      xIndex++;
-    } else {
-      if (!citiesCache[sortedByY[yIndex].id].sorted) {
-        finalSort.push(sortedByY[yIndex]);
-        citiesCache[sortedByY[yIndex].id].sorted = true;
-      }
-
-      yIndex++;
-    }
-  }
-
-  console.log(citiesCache);
-  return finalSort;
-}
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
 var canvas = document.querySelector("canvas");
 var c = canvas.getContext("2d");
-var maxCoordWidth, maxCoordHeight, xScale, yScale, cities, timeout, radius;
+var tick = 1;
+var maxCoordWidth, maxCoordHeight, xScale, yScale, timeout, radius;
 
 function initializeMap() {
-  var _coordinates$reduce = _coordinates.points40.reduce(function (maxVals, city) {
+  tick = 1;
+
+  var _coordinates$reduce = _coordinates.points500.reduce(function (maxVals, city) {
     if (city.x > maxVals[0]) {
       maxVals[0] = city.x;
     }
@@ -21603,16 +21595,59 @@ function initializeMap() {
 
   maxCoordWidth = _coordinates$reduce2[0];
   maxCoordHeight = _coordinates$reduce2[1];
-  cities = getSortedCities();
   setCanvasDimensions();
-  cities = cities.map(function (city, i) {
+  var cities = getSortedCities().map(function (city, i, array) {
     var circle = new Circle(city.x, city.y);
-    var next = cities[i + 1] ? cities[i + 1] : cities[0];
-    requestAnimationFrame(function () {
-      circle.draw(next);
-    });
+    var next = array[i + 1] ? array[i + 1] : array[0];
+    circle.draw(next);
     return circle;
+  }); // calculate incremental points along the path
+
+  var points = (0, _calcWaypoints.default)([].concat(_toConsumableArray(cities), [cities[0]]), xScale, yScale);
+  animate(); // incrementally draw additional line segments along the path
+
+  function animate() {
+    if (tick < points.length - 1) {
+      requestAnimationFrame(animate);
+    }
+
+    c.beginPath();
+    c.moveTo(points[tick - 1].x * xScale, points[tick - 1].y * yScale);
+    c.lineTo(points[tick].x * xScale, points[tick].y * yScale);
+    c.stroke();
+    tick++;
+  }
+}
+
+function getSortedCities() {
+  var cities = _coordinates.points500.map(function (city, i) {
+    city.id = i;
+    return city;
   });
+
+  var chunkSize = cities.length / 10;
+
+  var sortedByY = _toConsumableArray(cities).sort(function (cityA, cityB) {
+    return cityA.y - cityB.y;
+  });
+
+  var chunkedArray = (0, _lodash.chunk)(sortedByY, chunkSize).map(function (chunk, i) {
+    chunk.sort(function (cityA, cityB) {
+      if (i % 2 !== 0) {
+        return cityA.x - cityB.x;
+      }
+
+      return cityB.x - cityA.x;
+    });
+    return chunk;
+  });
+  cities = chunkedArray.flat();
+  var first = cities.findIndex(function (city) {
+    return city.id === 0;
+  });
+  var firstHalf = cities.slice(0, first);
+  var lastHalf = cities.slice(first);
+  return [].concat(_toConsumableArray(lastHalf), _toConsumableArray(firstHalf));
 }
 
 function setCanvasDimensions() {
@@ -21630,37 +21665,26 @@ function Circle(x, y) {
 
   this.draw = function (next) {
     var currentX = this.x * xScale;
-    var currentY = this.y * yScale;
-    var nextX = next.x * xScale;
-    var nextY = next.y * yScale; // current city
+    var currentY = this.y * yScale; // current city
 
     c.beginPath();
     c.arc(currentX, currentY, radius, 0, Math.PI * 2, false);
     c.fillStyle = this.color;
     c.fill();
-    c.lineWidth = 1; // line to next city
-
-    c.beginPath();
-    c.moveTo(currentX, currentY);
-    c.lineTo(nextX, nextY);
-    c.stroke();
+    c.lineWidth = 1;
   };
 }
 
 window.addEventListener("resize", function () {
   clearTimeout(timeout);
   timeout = setTimeout(function () {
-    setCanvasDimensions();
-    cities.forEach(function (city, i) {
-      var next = cities[i + 1] ? cities[i + 1] : cities[0];
-      city.draw(next);
-    });
+    initializeMap();
   }, 100);
 });
 window.addEventListener("load", function () {
   initializeMap();
 });
-},{"lodash":"../node_modules/lodash/lodash.js","./coordinates":"js/coordinates.js"}],"../../../Users/matthewmasurka/.config/yarn/global/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"lodash":"../node_modules/lodash/lodash.js","./calcWaypoints":"js/calcWaypoints.js","./coordinates":"js/coordinates.js"}],"../../../Users/matthewmasurka/.config/yarn/global/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
